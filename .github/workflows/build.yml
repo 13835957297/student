@@ -1,0 +1,47 @@
+name: 🚀 打包 Electron 应用
+
+# 什么时候触发这个流程
+on:
+  push:
+    tags:
+      - 'v*'  # 当你推送一个以 "v" 开头的标签时，比如 v1.0.0
+
+jobs:
+  build:
+    name: 构建 ${{ matrix.os }} 版本
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+
+    steps:
+      # 1. 下载你的代码
+      - name: 📥 下载代码
+        uses: actions/checkout@v4
+
+      # 2. 安装 Node.js
+      - name: ⚙️ 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      # 3. 安装依赖
+      - name: 🔧 安装依赖
+        run: npm ci
+
+      # 4. 打包应用
+      - name: 📦 打包应用
+        run: npx electron-builder --publish never
+        env:
+          # 设置应用图标（如果你有）
+          # WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          # WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 5. 上传打包好的文件
+      - name: 📤 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.os }} 
+          path: dist/**
