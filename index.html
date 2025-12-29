@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <!-- <title></title> -->
+   <link rel="stylesheet" href="assets/css/common.css">
+</head>
+<body>
+
+   <div id="loading">
+    <video autoplay loop muted>
+        <source src="assets/loading.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+   </div>
+  <div id="webview-container">  
+    <webview id="myWebview" preload="./preload.js"/>
+  </div>
+
+
+  <!-- <webview id="myWebview" src="https://bowen.cb-ec.cn/" preload="./preload.js"></webview> -->
+
+  <!-- <button onclick="testElectron()">测试 Electron 通信</button> -->
+
+  <script src="renderer.js"></script>
+</body>
+</html>

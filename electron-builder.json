@@ -1,0 +1,27 @@
+{
+  "productName": "MyElectronApp",
+  "appId": "com.example.myelectronapp",
+  "directories": {
+    "output": "dist"
+  },
+  "files": [
+    "main.js",
+    "preload.js",
+    "index.html",
+    "renderer.js",
+    "assets/**/*"
+  ],
+  "mac": {
+    "target": "dmg",
+    "category": "public.app-category.utilities"
+  },
+  "win": {
+    "target": "nsis",
+    "icon": "assets/icon.png"
+  },
+  "linux": {
+    "target": ["AppImage", "deb", "rpm"],
+    "arch": ["arm64"],
+    "icon": "assets/icon.png"
+  }
+}

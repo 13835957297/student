@@ -1,0 +1,51 @@
+{
+  "name": "my-electron-app",
+  "version": "1.0.0",
+  "description": "一个简单的 Electron 应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron-forge start",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
+  },
+  "build": {
+    "appId": "com.yourcompany.yourapp",
+    "productName": "MyApp",
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "./assets/icon.png"
+    }
+  },
+  "keywords": [
+    "Electron"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@electron-forge/cli": "^7.9.0",
+    "@electron-forge/maker-deb": "^7.9.0",
+    "@electron-forge/maker-rpm": "^7.9.0",
+    "@electron-forge/maker-squirrel": "^7.9.0",
+    "@electron-forge/maker-zip": "^7.9.0",
+    "@electron-forge/plugin-auto-unpack-natives": "^7.9.0",
+    "@electron-forge/plugin-fuses": "^7.9.0",
+    "@electron/fuses": "^1.8.0",
+    "electron": "^32.0.0",
+    "electron-builder": "^26.0.12",
+    "electron-reloader": "^1.2.3"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1",
+    "git-filter-repo": "^0.0.30"
+  }
+}
