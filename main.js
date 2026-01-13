@@ -1,6 +1,8 @@
 const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron')
 const { pollUntilAccessible } = require('./utils/pollWebsite');
+const { PORT, ip } =  require('./config.js');
 const path = require('path')
+const net = require('net');
 
 // 热重载
 if (require('electron-squirrel-startup')) return;
@@ -117,6 +119,31 @@ function createDpWindow() {
   });
 }
 
+// TCP客户端
+function connectToServer(ip, port = 8080){
+  const client = new net.Socket();
+
+  client.connect(port, ip, () => {
+    console.log(`已连接到 ${ip}:${port}`);
+    
+    // 发送测试消息
+    client.write(JSON.stringify({ from: 'startUp', text: 'Hello', timeLog: Date.now() }));
+  });
+
+  client.on('data', (data) => {
+    console.log('收到响应:', data.toString());
+  });
+
+  client.on('error', (err) => {
+    console.error('连接失败:', err.message);
+  });
+
+  client.on('close', () => {
+    console.log('连接已关闭');
+  });
+
+  return client;
+}
 
 app.whenReady().then(() => {
   // createWindow()
@@ -142,6 +169,9 @@ app.whenReady().then(() => {
 
   // 创建dp窗口
   createDpWindow();
+  // 启动客户端连接
+  connectToServer(ip, PORT);
+
     // 🔑 全局快捷键：切回 DP 屏（维护结束时用）
   const success = globalShortcut.register('Ctrl+Alt+F', () => {
     if (dpWindow && !dpWindow.isDestroyed()) {
