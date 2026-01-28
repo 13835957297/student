@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron')
 const { pollUntilAccessible } = require('./utils/pollWebsite');
-const { PORT, ip } =  require('./config.js');
+const { PORT, ip, IpIdEnum } =  require('./config.js');
+const os = require('os');
 const path = require('path')
 const net = require('net');
 
@@ -81,6 +82,7 @@ function createDpWindow() {
     alwaysOnTop: true,
     skipTaskbar: true,
     resizable: false,
+    devTools: false, // 默认 true
     // kiosk: false,       // 👈 暂时关闭 kiosk，我们用 API 控制
     // fullscreen: false,  // 👈 构造函数里不设全屏
     webPreferences: {
@@ -91,6 +93,9 @@ function createDpWindow() {
   });
 
   dpWindow.loadFile('index.html');
+  // 自动打开 DevTools（开发时）
+  // dpWindow.webContents.openDevTools();
+
   dpWindow.once('ready-to-show', () => {
      // 1. 获取真实的屏幕尺寸（包含任务栏区域）
     // 注意：这里使用 workArea 可能不够，我们需要用 bounds 并手动扩大
@@ -205,3 +210,86 @@ ipcMain.handle('poll-and-load-website', async (event, targetUrl) => {
     throw new Error('Website not accessible within retry limit');
   }
 });
+
+// 学生端投屏图片、文件
+ipcMain.on('webview-send-genFile', async (event, data) => {
+  console.log('📸 Zhunbeitouping:', data);
+
+  try {
+    // 下载图片到本地临时文件
+    // const buffer = await downloadImage(imgSrc);
+    // const tempPath = path.join(app.getPath('temp'), '投屏图片.jpg');
+    // fs.writeFileSync(tempPath, buffer);
+
+    // 通过 TCP 发送给学生机
+    sendFileToTeacher({...data, machineId: IpIdEnum[getLocalIPv4()]});
+  } catch (err) {
+    console.error('TOU ping shi bai:', err);
+  }
+});
+
+// function downloadImage(url) {
+//   return new Promise((resolve, reject) => {
+//     const client = url.startsWith('https') ? https : http;
+//     client.get(url, (res) => {
+//       const chunks = [];
+//       res.on('data', chunk => chunks.push(chunk));
+//       res.on('end', () => resolve(Buffer.concat(chunks)));
+//     }).on('error', reject);
+//   });
+// }
+
+function sendFileToTeacher(data) {
+  const socket = new net.Socket();
+  socket.connect(PORT, ip, () => {
+    // const buffer = fs.readFileSync(imagePath);
+    console.log('kaishilianjie')
+    socket.write(JSON.stringify(data));
+    // socket.write(buffer);
+    // socket.end();
+    console.log('📤 tupianyifasong');
+  });
+
+  socket.on('error', (err) => {
+    console.error('❌ wufalianjie:', err.message);
+  });
+}
+
+// 获取本机ip地址
+function getLocalIPv4() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
+
+
+// 关闭教师端图片展示
+ipcMain.handle('close-imgwin', async (event) => {
+  try {
+    // 通过 TCP 发送给学生机
+    closeImgwin();
+  } catch (err) {
+    console.error('TOU ping shi bai:', err);
+  }
+});
+
+function closeImgwin() {
+  const socket = new net.Socket();
+  socket.connect(PORT, ip, () => {
+    // const buffer = fs.readFileSync(imagePath);
+    console.log('guanbitupian: kaishilianjie')
+    socket.write(JSON.stringify({ from: 'hidePic', text: "hidePic", timeLog: Date.now() }));
+    // socket.write(buffer);
+    // socket.end();
+  });
+
+  socket.on('error', (err) => {
+    console.error('❌ wufalianjie:', err.message);
+  });
+}

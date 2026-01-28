@@ -1,7 +1,16 @@
-async function testElectron() {
-  const response = await window.electronAPI.ping()
-  document.getElementById('result').textContent = response
-}
+// async function testElectron() {
+//   const response = await window.electronAPI.ping()
+//   document.getElementById('result').textContent = response
+// }
+// async function testElectron2() {
+//   window.electronAPI.sendImageToHost("https://img-nos.yiyouliao.com/alph/73c0cf110d2a14e92f48633db4a833c8.jpeg?yiyouliao_channel=vivo_image")
+//   document.getElementById('result').textContent = "ok了"
+// }
+
+// async function closeWin() {
+//   window.electronAPI.closeImgwin()
+//   document.getElementById('result').textContent = "关闭了."
+// }
 
 // 可选：监听主进程消息
 // window.electronAPI.onUpdate((data) => {
