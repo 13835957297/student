@@ -12,7 +12,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [ubuntu-latest]
 
     steps:
       # 1. 下载你的代码
@@ -43,5 +43,5 @@ jobs:
       - name: 📤 上传安装包
         uses: actions/upload-artifact@v4
         with:
-          name: dist-${{ matrix.os }} 
-          path: dist/**
+          name: aigc_student_dist-${{ matrix.os }} 
+          path: aigc_student_dist/**
