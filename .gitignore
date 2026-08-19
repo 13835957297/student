@@ -6,6 +6,7 @@ yarn-debug.log
 .pnpm-debug.log
 
 # Build directories
+/aigc_student_dist
 /dist
 /out
 /build

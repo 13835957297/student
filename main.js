@@ -1,9 +1,13 @@
-const { app, BrowserWindow, ipcMain, screen, globalShortcut } = require('electron')
+const { app, BrowserWindow, ipcMain, screen, globalShortcut, protocol, dialog } = require('electron')
 const { pollUntilAccessible } = require('./utils/pollWebsite');
-const { PORT, ip, IpIdEnum } =  require('./config.js');
+const { PORT, ip, IpIdEnum, TARGET_URL } =  require('./config.js');
 const os = require('os');
 const path = require('path')
 const net = require('net');
+const { exec } = require('child_process');
+
+const http = require('http');
+const url = require('url');
 
 // 热重载
 if (require('electron-squirrel-startup')) return;
@@ -12,6 +16,11 @@ try {
 } catch (err) {
   console.log('Failed to enable hot reload:', err);
 }
+
+
+ipcMain.handle('get-app-config', (event) => {
+  return { TARGET_URL };
+});
 
 ipcMain.handle('ping', async (event) => {
   return 'pong!'  // 可以返回任意数据
@@ -85,6 +94,7 @@ function createDpWindow() {
     devTools: false, // 默认 true
     // kiosk: false,       // 👈 暂时关闭 kiosk，我们用 API 控制
     // fullscreen: false,  // 👈 构造函数里不设全屏
+    backgroundColor: '#001529',
     webPreferences: {
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js'),
@@ -95,6 +105,11 @@ function createDpWindow() {
   dpWindow.loadFile('index.html');
   // 自动打开 DevTools（开发时）
   // dpWindow.webContents.openDevTools();
+
+  dpWindow.webContents.on('did-finish-load', () => {
+    // 注入悬浮关机按钮（所有页面都注入）
+    injectShutdownButton();
+  });
 
   dpWindow.once('ready-to-show', () => {
      // 1. 获取真实的屏幕尺寸（包含任务栏区域）
@@ -124,6 +139,85 @@ function createDpWindow() {
   });
 }
 
+
+function injectShutdownButton() {
+    const iconPath = 'app:///assets/guanji.png';
+    const injectScript = `
+        // 创建悬浮按钮
+        const shutdownBtn = document.createElement('button');
+        shutdownBtn.id = 'shutdown-btn';
+        shutdownBtn.style.cssText = \`
+            position: fixed;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(145deg, #2d2d2d, #1f1f1f);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            z-index: 9999;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 
+                0 10px 40px rgba(0, 0, 0, 0.5),
+                0 4px 15px rgba(0, 0, 0, 0.35),
+                inset 0 2px 3px rgba(255, 255, 255, 0.12),
+                inset 0 -2px 3px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            outline: none;
+        \`;
+        
+        // 创建图标元素
+        const icon = document.createElement('div');
+        icon.style.cssText = \`
+            width: 45px;
+            height: 45px;
+            background-image: url('${iconPath}');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.9;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        \`;
+        shutdownBtn.appendChild(icon);
+        
+        shutdownBtn.onmouseenter = function() {
+            this.style.transform = 'translateY(-50%) scale(1.15)';
+            this.style.background = 'linear-gradient(145deg, #ff4757, #c0392b)';
+            this.style.boxShadow = '0 15px 50px rgba(255, 71, 87, 0.5), 0 8px 25px rgba(255, 71, 87, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.25)';
+            icon.style.opacity = '1';
+            icon.style.transform = 'scale(1.15)';
+        };
+        
+        shutdownBtn.onmouseleave = function() {
+            this.style.transform = 'translateY(-50%) scale(1)';
+            this.style.background = 'linear-gradient(145deg, #2d2d2d, #1f1f1f)';
+            this.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.5), 0 4px 15px rgba(0, 0, 0, 0.35), inset 0 2px 3px rgba(255, 255, 255, 0.12), inset 0 -2px 3px rgba(0, 0, 0, 0.3)';
+            icon.style.opacity = '0.9';
+            icon.style.transform = 'scale(1)';
+        };
+        
+        shutdownBtn.onclick = function() {
+            window.electronAPI.confirmShutdown();
+        };
+        
+        // 移除已存在的按钮
+        const existingBtn = document.getElementById('shutdown-btn');
+        if (existingBtn) {
+            existingBtn.remove();
+        }
+        
+        document.body.appendChild(shutdownBtn);
+    `;
+    
+    dpWindow.webContents.executeJavaScript(injectScript).catch(err => {
+        console.error('注入悬浮按钮失败:', err);
+    });
+}
 // TCP客户端
 function connectToServer(ip, port = 8080){
   const client = new net.Socket();
@@ -150,7 +244,76 @@ function connectToServer(ip, port = 8080){
   return client;
 }
 
+function restartTeacher() {
+    const teacherIP = '192.168.31.125';
+    const port = '9527';
+
+    // 第一步：先 ping 确认教师端在线
+    const pingURL = `http://${teacherIP}:${port}/ping`;
+    
+    const pingRequest = http.get(pingURL, (resp) => {
+        let data = '';
+        
+        // 接收数据
+        resp.on('data', (chunk) => {
+            data += chunk;
+        });
+        
+        // 数据接收完成
+        resp.on('end', () => {
+            try {
+                const result = JSON.parse(data);
+                
+                if (result.role !== 'teacher') {
+                    console.log('目标不是教师端');
+                    return;
+                }
+                
+                // 第二步：发送重启指令
+                const restartURL = `http://${teacherIP}:${port}/restart`;
+                const restartRequest = http.get(restartURL, (restartResp) => {
+                    let restartData = '';
+                    
+                    restartResp.on('data', (chunk) => {
+                        restartData += chunk;
+                    });
+                    
+                    restartResp.on('end', () => {
+                        console.log('已向教师端发送重启指令');
+                    });
+                });
+                
+                restartRequest.on('error', (err) => {
+                    console.log('发送重启指令失败:', err.message);
+                });
+                
+                restartRequest.setTimeout(3000, () => {
+                    restartRequest.destroy();
+                    console.log('发送重启指令超时');
+                });
+                
+            } catch (error) {
+                console.log('解析响应失败:', error.message);
+            }
+        });
+    });
+    
+    pingRequest.on('error', (err) => {
+        console.log('教师端不在线:', err.message);
+    });
+    
+    pingRequest.setTimeout(3000, () => {
+        pingRequest.destroy();
+        console.log('Ping 请求超时');
+    });
+}
+
 app.whenReady().then(() => {
+  protocol.registerFileProtocol('app', (request, callback) => {
+        const url = request.url.replace('app:///', '');
+        const filePath = path.join(__dirname, url);
+        callback({ path: filePath });
+    });
   // createWindow()
 
   // const success = globalShortcut.register('Ctrl+Alt+F', () => {
@@ -175,7 +338,8 @@ app.whenReady().then(() => {
   // 创建dp窗口
   createDpWindow();
   // 启动客户端连接
-  connectToServer(ip, PORT);
+  // connectToServer(ip, PORT);
+  restartTeacher();
 
     // 🔑 全局快捷键：切回 DP 屏（维护结束时用）
   const success = globalShortcut.register('Ctrl+Alt+F', () => {
@@ -188,6 +352,15 @@ app.whenReady().then(() => {
 
   if (!success) {
     console.warn('⚠️ 快捷键注册失败（可能被其他程序占用）');
+  }
+
+  // 注册全局快捷键：Ctrl+Q (Windows/Linux) 或 Cmd+Q (macOS)
+  const ret = globalShortcut.register('CommandOrControl+Q', () => {
+    app.quit();
+  });
+
+  if (!ret) {
+    console.log('注册快捷键失败');
   }
 
 })
@@ -278,6 +451,56 @@ ipcMain.handle('close-imgwin', async (event) => {
     console.error('TOU ping shi bai:', err);
   }
 });
+
+// IPC 监听关机确认请求
+ipcMain.on('confirm-shutdown', () => {
+    confirmShutdown();
+});
+
+async function confirmShutdown() {
+    const options = {
+        type: 'warning',
+        title: '确认关机',
+        message: '确定要关闭计算机吗？',
+        detail: '此操作将立即关闭计算机，请确保已保存所有工作。',
+        buttons: ['取消', '确认关机'],
+        defaultId: 0,
+        cancelId: 0
+    };
+
+    const response = await dialog.showMessageBox(dpWindow, options);
+    
+    if (response.response === 1) {
+        // 用户点击确认关机
+        console.log('用户确认关机');
+        
+        // 根据操作系统执行关机指令
+        if (process.platform === 'win32') {
+            // Windows 关机命令
+            exec('shutdown /s /t 0', (error) => {
+                if (error) {
+                    console.error('关机命令执行失败:', error);
+                }
+            });
+        } else if (process.platform === 'linux') {
+            // Linux 关机命令
+            exec('sudo shutdown -h now', (error) => {
+                if (error) {
+                    console.error('关机命令执行失败:', error);
+                }
+            });
+        } else if (process.platform === 'darwin') {
+            // macOS 关机命令
+            exec('shutdown -h now', (error) => {
+                if (error) {
+                    console.error('关机命令执行失败:', error);
+                }
+            });
+        }
+    } else {
+        console.log('用户取消关机');
+    }
+}
 
 function closeImgwin() {
   const socket = new net.Socket();

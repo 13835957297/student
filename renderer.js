@@ -20,11 +20,13 @@
 
 // renderer.js
 // const targetUrl = 'https://bowen.cb-ec.cn/'; // 局域网地址
-const targetUrl = 'http://bw2.cb-ec.cn/'; // 局域网地址
+// const targetUrl = 'https://bw2.cb-ec.cn/'; // 局域网地址
 
 
 (async () => {
   try {
+    const config = await window.electronAPI.getAppConfig();
+    const targetUrl = config.TARGET_URL; // 局域网地址（教师端）
     const accessibleUrl = await window.electronAPI.pollAndLoadWebsite(targetUrl);
     
     // 切换 UI：隐藏 loading，显示 webview

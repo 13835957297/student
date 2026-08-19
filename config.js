@@ -1,4 +1,4 @@
-// const TARGET_URL = 'http://bw2.cb-ec.cn/teacher';
+const TARGET_URL = 'https://aigc0002.cb-ec.cn/';
 const PORT  = 8080;
 // const HOST = '0.0.0.0'; // 监听所有网络接口（包括局域网）
 const ip = '192.168.20.200'; //服务端ip
@@ -15,5 +15,5 @@ const IpIdEnum = {
   // '192.168.31.xxx': 'ceshi007',
 };
 
-module.exports = { PORT, ip, IpIdEnum };
+module.exports = { PORT, ip, IpIdEnum,TARGET_URL };
 

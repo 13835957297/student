@@ -1,7 +1,7 @@
 {
-  "name": "my-electron-app",
+  "name": "aigc-student",
   "version": "1.0.0",
-  "description": "一个简单的 Electron 应用",
+  "description": "AIGC应用--学生",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
@@ -12,13 +12,16 @@
   },
   "build": {
     "appId": "com.yourcompany.yourapp",
-    "productName": "MyApp",
+    "productName": "AIGC App",
+    "directories": {
+      "output": "aigc_student_dist"
+    },
     "linux": {
       "target": [
         {
           "target": "AppImage",
           "arch": [
-            "arm64"
+            "amd64"
           ]
         }
       ],
@@ -29,7 +32,7 @@
   "keywords": [
     "Electron"
   ],
-  "author": "Your Name",
+  "author": "liuanwen",
   "license": "MIT",
   "devDependencies": {
     "@electron-forge/cli": "^7.9.0",
@@ -42,7 +45,8 @@
     "@electron/fuses": "^1.8.0",
     "electron": "^32.0.0",
     "electron-builder": "^26.0.12",
-    "electron-reloader": "^1.2.3"
+    "electron-reloader": "^1.2.3",
+    "moment": "^2.30.1"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",

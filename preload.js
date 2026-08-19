@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ping: () => ipcRenderer.invoke('ping'),
   pollAndLoadWebsite: (url) => ipcRenderer.invoke('poll-and-load-website', url),
   closeImgwin: () => ipcRenderer.invoke('close-imgwin'),
+  getAppConfig: () => ipcRenderer.invoke('get-app-config'),
+  confirmShutdown: () => ipcRenderer.send('confirm-shutdown')
 })
 
 // // preload.js去除webview滚动条
