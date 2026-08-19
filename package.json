@@ -21,7 +21,7 @@
         {
           "target": "AppImage",
           "arch": [
-            "amd64"
+            "x64"
           ]
         }
       ],
