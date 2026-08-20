@@ -94,6 +94,7 @@ function createDpWindow() {
     devTools: false, // 默认 true
     // kiosk: false,       // 👈 暂时关闭 kiosk，我们用 API 控制
     // fullscreen: false,  // 👈 构造函数里不设全屏
+    autoHideMenuBar: true,
     backgroundColor: '#001529',
     webPreferences: {
       contextIsolation: true,
@@ -128,6 +129,9 @@ function createDpWindow() {
     });
     // 3. 强制置顶（防止被系统弹窗压住）
     dpWindow.setAlwaysOnTop(true, 'screen-saver'); // 'screen-saver' 级别最高
+    // 隐藏菜单栏
+    dpWindow.setMenuBarVisibility(false);
+
     dpWindow.show()
     dpWindow.on('blur', () => {
     setTimeout(() => {
